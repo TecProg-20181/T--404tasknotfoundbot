@@ -10,7 +10,7 @@ import sqlalchemy
 import db
 from db import Task
 
-TOKEN = ""
+TOKEN = "token.txt"
 URL = "https://api.telegram.org/bot{}/".format(TOKEN)
 
 HELP = """
@@ -358,4 +358,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
