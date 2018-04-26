@@ -92,6 +92,17 @@ def deps_text(task, chat, preceed=''):
     return text
 
 
+def puts_icon_to_priority(task):
+    icon_priority = ''
+    if task.priority == 'low':
+        icon_priority += '\U00002755'
+    elif task.priority == 'medium':
+        icon_priority += '\U00002757'
+    elif task.priority == 'high':
+        icon_priority += '\U0000203C'
+    return icon_priority
+
+
 def handle_updates(updates):
     for update in updates["result"]:
         if 'message' in update:
@@ -243,7 +254,7 @@ def handle_updates(updates):
                 elif task.status == 'DONE':
                     icon = '\U00002611'
 
-                a += '[[{}]] {} {} {}\n'.format(task.id, icon, task.name, task.priority)
+                a += '[[{}]] {} {} {}\n'.format(task.id, icon, task.name, icon_priority)
                 a += deps_text(task, chat)
 
             send_message(a, chat)
@@ -253,15 +264,18 @@ def handle_updates(updates):
             query = db.session.query(Task).filter_by(status='TODO', chat=chat).order_by(Task.id)
             a += '\n\U0001F195 *TODO*\n'
             for task in query.all():
-                a += '[[{}]] {}\n'.format(task.id, task.name, task.priority)
+                icon_priority = puts_icon_to_priority(task)
+                a += '[[{}]] {} {}\n'.format(task.id, task.name, icon_priority)
             query = db.session.query(Task).filter_by(status='DOING', chat=chat).order_by(Task.id)
             a += '\n\U000023FA *DOING*\n'
             for task in query.all():
-                a += '[[{}]] {}\n'.format(task.id, task.name, task.priority)
+                icon_priority = puts_icon_to_priority(task)
+                a += '[[{}]] {} {}\n'.format(task.id, task.name, task.priority)
             query = db.session.query(Task).filter_by(status='DONE', chat=chat).order_by(Task.id)
             a += '\n\U00002611 *DONE*\n'
             for task in query.all():
-                a += '[[{}]] {}\n'.format(task.id, task.name, task.priority)
+                icon_priority = puts_icon_to_priority(task)
+                a += '[[{}]] {} {}\n'.format(task.id, task.name, task.priority)
 
             send_message(a, chat)
         elif command == '/dependson':
