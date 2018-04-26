@@ -243,7 +243,7 @@ def handle_updates(updates):
                 elif task.status == 'DONE':
                     icon = '\U00002611'
 
-                a += '[[{}]] {} {}\n'.format(task.id, icon, task.name)
+                a += '[[{}]] {} {} {}\n'.format(task.id, icon, task.name, task.priority)
                 a += deps_text(task, chat)
 
             send_message(a, chat)
@@ -253,15 +253,15 @@ def handle_updates(updates):
             query = db.session.query(Task).filter_by(status='TODO', chat=chat).order_by(Task.id)
             a += '\n\U0001F195 *TODO*\n'
             for task in query.all():
-                a += '[[{}]] {}\n'.format(task.id, task.name)
+                a += '[[{}]] {}\n'.format(task.id, task.name, task.priority)
             query = db.session.query(Task).filter_by(status='DOING', chat=chat).order_by(Task.id)
             a += '\n\U000023FA *DOING*\n'
             for task in query.all():
-                a += '[[{}]] {}\n'.format(task.id, task.name)
+                a += '[[{}]] {}\n'.format(task.id, task.name, task.priority)
             query = db.session.query(Task).filter_by(status='DONE', chat=chat).order_by(Task.id)
             a += '\n\U00002611 *DONE*\n'
             for task in query.all():
-                a += '[[{}]] {}\n'.format(task.id, task.name)
+                a += '[[{}]] {}\n'.format(task.id, task.name, task.priority)
 
             send_message(a, chat)
         elif command == '/dependson':
