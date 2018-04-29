@@ -10,11 +10,15 @@ import sqlalchemy
 import db
 from db import Task
 
-from requests import Requests
-from commands import Commands
+def get_token():
+    file_token = "token.txt"
+    inFile = open(file_token, 'r')
+    token = inFile.readline()
+    return token
 
-TOKEN = "token.txt"
-URL = "https://api.telegram.org/bot{}/".format(TOKEN)
+
+TOKEN = get_token()
+URL = "https://api.telegram.org/bot{}/".format(TOKEN.rstrip())
 
 HELP = """
  /new NOME
