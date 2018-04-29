@@ -10,6 +10,9 @@ from db import Task
 
 class Commands():
 
+    def __init__(self):
+        pass
+        
     def newTask(self,chat):
         self.task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority='')
         db.session.add(self.task)
