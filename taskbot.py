@@ -35,7 +35,7 @@ HELP = """
  /help
 """
 
-def handle_updates(updates):
+def getFunction(updates):
     for update in updates["result"]:
         if 'message' in update:
             message = update['message']
@@ -54,87 +54,109 @@ def handle_updates(updates):
 
         print(command, msg, chat)
 
-    if command == '/new':
-            newTask()
-
-    elif command == '/rename':
-            text = ''
-            if msg != '':
-                if len(msg.split(' ', 1)) > 1:
-                    text = msg.split(' ', 1)[1]
-                msg = msg.split(' ', 1)[0]
-
-            if not msg.isdigit():
-                send_message("You must inform the task id", chat)
-            else:
-                renameTask()
-
-    elif command == '/duplicate':
-        if not msg.isdigit():
-            send_message("You must inform the task id", chat)
-        else:
-           duplicateTask()
-
-    elif command == '/delete':
-        if not msg.isdigit():
-            send_message("You must inform the task id", chat)
-        else:
-            deleteTask()
-
-    elif command == '/todo':
-        if not msg.isdigit():
-            send_message("You must inform the task id", chat)
-        else:
-            printAllTasks()
-
-    elif command == '/doing':
-        if not msg.isdigit():
-            send_message("You must inform the task id", chat)
-        else:
-            doingTask()
+    return {
+    '/new': newTask(),
+    '/todo': printAllTasks(),
+    '/rename':renameTask(),
+    '/doing': doingTask(),
+    #'/date':,
+    '/done': taskDone(),
+    '/delete': deleteTask(),
+    '/list': listTasks(),
+    '/rename': renameTask(),
+    '/dependsOn': dependsOn(),
+    '/duplicate': duplicateTask(),
+    '/priority': taskPriority(),
+    '/help': helpbot(),
+    '/start': start(),
+    }[command]
 
 
-    elif command == '/done':
-        if not msg.isdigit():
-            send_message("You must inform the task id", chat)
-        else:
-            taskDone()
+
+def handle_updates(updates):
 
 
-    elif command == '/list':
-        listTasks()
+   if command == '/new':
+           newTask()
 
-    elif command == '/dependson':
-        text = ''
-        if msg != '':
-            if len(msg.split(' ', 1)) > 1:
-                text = msg.split(' ', 1)[1]
-            msg = msg.split(' ', 1)[0]
+   elif command == '/rename':
+           text = ''
+           if msg != '':
+               if len(msg.split(' ', 1)) > 1:
+                   text = msg.split(' ', 1)[1]
+               msg = msg.split(' ', 1)[0]
 
-        if not msg.isdigit():
-            send_message("You must inform the task id", chat)
-        else:
-            dependsOn()
+           if not msg.isdigit():
+               send_message("You must inform the task id", chat)
+           else:
+               renameTask()
 
-    elif command == '/priority':
-        text = ''
-        if msg != '':
-            if len(msg.split(' ', 1)) > 1:
-                text = msg.split(' ', 1)[1]
-            msg = msg.split(' ', 1)[0]
+   elif command == '/duplicate':
+       if not msg.isdigit():
+           send_message("You must inform the task id", chat)
+       else:
+          duplicateTask()
 
-        if not msg.isdigit():
-            send_message("You must inform the task id", chat)
-        else:
-            taskPriority()
+   elif command == '/delete':
+       if not msg.isdigit():
+           send_message("You must inform the task id", chat)
+       else:
+           deleteTask()
+
+   elif command == '/todo':
+       if not msg.isdigit():
+           send_message("You must inform the task id", chat)
+       else:
+           printAllTasks()
+
+   elif command == '/doing':
+       if not msg.isdigit():
+           send_message("You must inform the task id", chat)
+       else:
+           doingTask()
 
 
-    elif command == '/start':
-        start()
-    elif command == '/help':
-        helpbot()
-    else:
-        send_message("I'm sorry dave. I'm afraid I can't do that.", chat)
+   elif command == '/done':
+       if not msg.isdigit():
+           send_message("You must inform the task id", chat)
+       else:
+           taskDone()
+
+
+   elif command == '/list':
+       listTasks()
+
+   elif command == '/dependson':
+       text = ''
+       if msg != '':
+           if len(msg.split(' ', 1)) > 1:
+               text = msg.split(' ', 1)[1]
+           msg = msg.split(' ', 1)[0]
+
+       if not msg.isdigit():
+           send_message("You must inform the task id", chat)
+       else:
+           dependsOn()
+
+   elif command == '/priority':
+       text = ''
+       if msg != '':
+           if len(msg.split(' ', 1)) > 1:
+               text = msg.split(' ', 1)[1]
+           msg = msg.split(' ', 1)[0]
+
+       if not msg.isdigit():
+           send_message("You must inform the task id", chat)
+       else:
+           taskPriority()
+
+
+   elif command == '/start':
+       start()
+   elif command == '/help':
+       helpbot()
+   else:
+       send_message("I'm sorry dave. I'm afraid I can't do that.", chat)
 
 
 def main():
@@ -146,6 +168,6 @@ def main():
 
         if len(updates["result"]) > 0:
             last_update_id = get_last_update_id(updates) + 1
-            handle_updates(updates)
+            getFunction(updates)
 
         time.sleep(0.5)
