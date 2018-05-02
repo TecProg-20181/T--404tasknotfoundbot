@@ -93,20 +93,13 @@ def deps_text(task, chat, preceed=''):
 
     return text
 
-def msg_not_empty(msg):
+def message_check(msg):
     if msg != '':
-        return True
-
-def condition_test(msg):
-    if len(msg.split(' ', 1)) > 1:
-        return True
-
-def split_msg(msg, element):
-    return msg.split(' ', 1)[element]
-
-def check_msg_not_exists(msg):
-    if not msg.isdigit():
-        return True
+        if len(msg.split(', ')) > 1:
+            text = msg.split(', ')[-1]
+        return msg.split(', ', 1)[0]
+    else:
+        return msg
 
 def query_one(task_id, chat):
     query = db.session.query(Task).filter_by(id=task_id,chat=chat)
@@ -123,8 +116,8 @@ def search_parent(task, target, chat):
         if target in numbers:
             return False
         else:
-            parent = self.query_one(numbers[0], chat)
-            return self.search_parent(parent, target, chat)
+            parent = query_one(numbers[0], chat)
+            return search_parent(parent, target, chat)
 
     return True
 def puts_icon_to_priority(task):
@@ -141,10 +134,8 @@ def puts_icon_to_priority(task):
 
 def new(msg,chat):
     text = ''
-    if msg != '':
-        if len(msg.split(', ')) > 1:
-            text = msg.split(', ')[-1]
-        msg = msg.split(', ', 1)[0]
+    msg = message_check(msg)
+
     if text == '':
         # priority = ''
         task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority='')
@@ -292,12 +283,12 @@ def lista(msg,chat):
         a += '[[{}]] {} {}\n'.format(task.id, icon, task.name)
         a += deps_text(task, chat)
 
-    send_message(a, chat)
-    a = ''
+#    send_message(a, chat)
+#    a = ''
 
     a += '\U0001F4DD _Status_\n'
     query = db.session.query(Task).filter_by(status='TODO', chat=chat).order_by(Task.id)
-    a += '\n\U0001F195 *TODO*\n'
+    a += '\n\U0001F195 *TO DO*\n'
     for task in query.all():
         icon_priority = puts_icon_to_priority(task.priority)
         a += '[[{}]] {}\n'.format(task.id, task.name)
@@ -335,15 +326,15 @@ def showpriority(msg,chat):
         a += '[[{}]] {}\n'.format(task.id, task.name)
 
     send_message(a, chat)
-def dependson():
+def dependson(msg,chat):
     text = ''
-    if msg_not_empty(msg):
-        if condition_test(msg):
-            text = split_msg(msg, 1)
-        msg = split_msg(msg, 0)
+    if msg != '':
+        if len(msg.split(' ', 1)) > 1:
+            text = msg.split(' ', 1)[1]
+        msg = msg.split(' ', 1)[0]
 
-    if check_msg_not_exists(msg):
-        msg_no_task(chat)
+    if not msg.isdigit():
+         send_message("You must inform the task id", chat)
     else:
         task_id = int(msg)
         query = db.session.query(Task).filter_by(id=task_id,\
@@ -385,8 +376,7 @@ def dependson():
                         if search_parent(task, taskdep.id, chat):
                             taskdep.parents += str(task.id) + ','
                         else:
-                            send_message("Essa tarefa já é filha"
-                                          " da sub tarefa", chat)
+                            send_message("As tarefas já estão associadas", chat)
                             break
                     except sqlalchemy.orm.exc.NoResultFound:
                         task_not_found_msg(task_id, chat)
