@@ -17,138 +17,140 @@ def get_token():
     token = inFile.readline()
     return token
 
+class HandleBot():
+    def __init__(self):
+        self.URL = "https://api.telegram.org/bot{}/".format(TOKEN.rstrip())
+        self.TOKEN = get_token()
+        self.HELP = """
+         /new NOME
+         /new NOME, PRIORITY{low, medium, high}
+         /todo ID
+         /doing ID
+         /done ID
+         /delete ID
+         /list
+         /rename ID NOME
+         /dependson ID ID...
+         /duplicate ID
+         /priority ID PRIORITY{low, medium, high}
+         /showpriority
+         /help
+        """
 
-TOKEN = get_token()
-URL = "https://api.telegram.org/bot{}/".format(TOKEN.rstrip())
+    def get_url(self, url):
+        response = requests.get(url)
+        content = response.content.decode("utf8")
+        return content
 
-HELP = """
- /new NOME
- /new NOME, PRIORITY{low, medium, high}
- /todo ID
- /doing ID
- /done ID
- /delete ID
- /list
- /rename ID NOME
- /dependson ID ID...
- /duplicate ID
- /priority ID PRIORITY{low, medium, high}
- /showpriority
- /help
-"""
+    def get_json_from_url(self, url):
+        content = self.get_url(url)
+        js = json.loads(content)
+        return js
 
-def get_url(url):
-    response = requests.get(url)
-    content = response.content.decode("utf8")
-    return content
+    def get_updates(self,offset=None):
+        url = self.URL + "getUpdates?timeout=100"
+        if offset:
+            url += "&offset={}".format(offset)
+        js = self.get_json_from_url(url)
+        return js
 
-def get_json_from_url(url):
-    content = get_url(url)
-    js = json.loads(content)
-    return js
+    def send_message(self,text, chat_id, reply_markup=None):
+        text = urllib.parse.quote_plus(text)
+        url = self.URL + "sendMessage?text={}&chat_id={}&parse_mode=Markdown".format(text, chat_id)
+        if reply_markup:
+            url += "&reply_markup={}".format(reply_markup)
+        self.get_url(url)
 
-def get_updates(offset=None):
-    url = URL + "getUpdates?timeout=100"
-    if offset:
-        url += "&offset={}".format(offset)
-    js = get_json_from_url(url)
-    return js
+    def get_last_update_id(self,updates):
+        update_ids = []
+        for update in updates["result"]:
+            update_ids.append(int(update["update_id"]))
 
-def send_message(text, chat_id, reply_markup=None):
-    text = urllib.parse.quote_plus(text)
-    url = URL + "sendMessage?text={}&chat_id={}&parse_mode=Markdown".format(text, chat_id)
-    if reply_markup:
-        url += "&reply_markup={}".format(reply_markup)
-    get_url(url)
+        return max(update_ids)
 
-def get_last_update_id(updates):
-    update_ids = []
-    for update in updates["result"]:
-        update_ids.append(int(update["update_id"]))
+    def deps_text(self, task, chat, preceed=''):
+        text = ''
 
-    return max(update_ids)
+        for i in range(len(task.dependencies.split(',')[:-1])):
+            line = preceed
+            query = db.session.query(Task).filter_by(id=int(task.dependencies.split(',')[:-1][i]), chat=chat)
+            dep = query.one()
 
-def deps_text(task, chat, preceed=''):
-    text = ''
+            icon = '\U0001F195'
+            if dep.status == 'DOING':
+                icon = '\U000023FA'
+            elif dep.status == 'DONE':
+                icon = '\U00002611'
 
-    for i in range(len(task.dependencies.split(',')[:-1])):
-        line = preceed
-        query = db.session.query(Task).filter_by(id=int(task.dependencies.split(',')[:-1][i]), chat=chat)
-        dep = query.one()
+            if i + 1 == len(task.dependencies.split(',')[:-1]):
+                line += '└── [[{}]] {} {}\n'.format(dep.id, icon, dep.name)
+                line += deps_text(dep, chat, preceed + '    ')
+            else:
+                line += '├── [[{}]] {} {}\n'.format(dep.id, icon, dep.name)
+                line += deps_text(dep, chat, preceed + '│   ')
 
-        icon = '\U0001F195'
-        if dep.status == 'DOING':
-            icon = '\U000023FA'
-        elif dep.status == 'DONE':
-            icon = '\U00002611'
+            text += line
 
-        if i + 1 == len(task.dependencies.split(',')[:-1]):
-            line += '└── [[{}]] {} {}\n'.format(dep.id, icon, dep.name)
-            line += deps_text(dep, chat, preceed + '    ')
+        return text
+
+    def message_check(self, msg):
+        if msg != '':
+            if len(msg.split(', ')) > 1:
+                text = msg.split(', ')[-1]
+            return msg.split(', ', 1)[0]
         else:
-            line += '├── [[{}]] {} {}\n'.format(dep.id, icon, dep.name)
-            line += deps_text(dep, chat, preceed + '│   ')
+            return msg
 
-        text += line
+    def query_one(self, task_id, chat):
+        query = db.session.query(Task).filter_by(id=task_id,chat=chat)
+        task = query.one()
+        return task
 
-    return text
+    def search_parent(self, task, target, chat):
+        if not task.parents == '':
+            parent_id = task.parents.split(',')
+            parent_id.pop()
 
-def message_check(msg):
-    if msg != '':
-        if len(msg.split(', ')) > 1:
-            text = msg.split(', ')[-1]
-        return msg.split(', ', 1)[0]
-    else:
-        return msg
+            numbers = [ int(id_pai) for id_pai in parent_id ]
 
-def query_one(task_id, chat):
-    query = db.session.query(Task).filter_by(id=task_id,chat=chat)
-    task = query.one()
-    return task
+            if target in numbers:
+                return False
+            else:
+                parent = query_one(numbers[0], chat)
+                return search_parent(parent, target, chat)
 
-def search_parent(task, target, chat):
-    if not task.parents == '':
-        parent_id = task.parents.split(',')
-        parent_id.pop()
-
-        numbers = [ int(id_pai) for id_pai in parent_id ]
-
-        if target in numbers:
-            return False
-        else:
-            parent = query_one(numbers[0], chat)
-            return search_parent(parent, target, chat)
-
-    return True
-def puts_icon_to_priority(task):
-    icon_priority = ''
-    if task == 'low':
-        icon_priority += '\U00002755'
-    elif task == 'medium':
-        icon_priority += '\U00002757'
-    elif task == 'high':
-        icon_priority += '\U0000203C'
-    return icon_priority
+        return True
+    def puts_icon_to_priority(task):
+        icon_priority = ''
+        if task == 'low':
+            icon_priority += '\U00002755'
+        elif task == 'medium':
+            icon_priority += '\U00002757'
+        elif task == 'high':
+            icon_priority += '\U0000203C'
+        return icon_priority
 
 ##Functions for the bot
+class BotFunctions(HandleBot):
 
-def new(msg,chat):
-    text = ''
-    msg = message_check(msg)
 
-    if text == '':
-        # priority = ''
-        task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority='')
-        send_message("New task *TODO* [[{}]] {}".format(task.id, task.name), chat)
-    else:
-        if text.lower() not in ['high', 'medium', 'low']:
-            send_message("The priority *must be* one of the following: high, medium, low", chat)
+    def new(self, msg, chat):
+        text = ''
+        msg = message_check(msg)
+
+        if text == '':
+            # priority = ''
+            task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority='')
+            send_message("New task *TODO* [[{}]] {}".format(task.id, task.name), chat)
         else:
-            priority = text.lower()
-            task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority=priority)
-            send_message("New task *TODO* [[{}]] {} with priority {}".format(task.id, task.name, task.priority), chat)
-    db.session.add(task)
-    db.session.commit()
+            if text.lower() not in ['high', 'medium', 'low']:
+                send_message("The priority *must be* one of the following: high, medium, low", chat)
+            else:
+                priority = text.lower()
+                task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority=priority)
+                send_message("New task *TODO* [[{}]] {} with priority {}".format(task.id, task.name, task.priority), chat)
+        db.session.add(task)
+        db.session.commit()
 
 def rename(msg,chat):
     text = ''
@@ -282,9 +284,6 @@ def lista(msg,chat):
 
         a += '[[{}]] {} {}\n'.format(task.id, icon, task.name)
         a += deps_text(task, chat)
-
-#    send_message(a, chat)
-#    a = ''
 
     a += '\U0001F4DD _Status_\n'
     query = db.session.query(Task).filter_by(status='TODO', chat=chat).order_by(Task.id)
