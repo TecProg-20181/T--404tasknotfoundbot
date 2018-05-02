@@ -93,7 +93,40 @@ def deps_text(task, chat, preceed=''):
 
     return text
 
+def msg_not_empty(msg):
+    if msg != '':
+        return True
 
+def condition_test(msg):
+    if len(msg.split(' ', 1)) > 1:
+        return True
+
+def split_msg(msg, element):
+    return msg.split(' ', 1)[element]
+
+def check_msg_not_exists(msg):
+    if not msg.isdigit():
+        return True
+
+def query_one(task_id, chat):
+    query = db.session.query(Task).filter_by(id=task_id,chat=chat)
+    task = query.one()
+    return task
+
+def search_parent(task, target, chat):
+    if not task.parents == '':
+        parent_id = task.parents.split(',')
+        parent_id.pop()
+
+        numbers = [ int(id_pai) for id_pai in parent_id ]
+
+        if target in numbers:
+            return False
+        else:
+            parent = self.query_one(numbers[0], chat)
+            return self.search_parent(parent, target, chat)
+
+    return True
 def puts_icon_to_priority(task):
     icon_priority = ''
     if task == 'low':
@@ -327,51 +360,70 @@ def handle_updates(updates):
             send_message(a, chat)
         elif command == '/dependson':
             text = ''
-            if msg != '':
-                if len(msg.split(' ', 1)) > 1:
-                    text = msg.split(' ', 1)[1]
-                msg = msg.split(' ', 1)[0]
+            if msg_not_empty(msg):
+                if condition_test(msg):
+                    text = split_msg(msg, 1)
+                msg = split_msg(msg, 0)
 
-            if not msg.isdigit():
-                send_message("You must inform the task id", chat)
+            if check_msg_not_exists(msg):
+                msg_no_task(chat)
             else:
                 task_id = int(msg)
-                query = db.session.query(Task).filter_by(id=task_id, chat=chat)
+                query = db.session.query(Task).filter_by(id=task_id,\
+                                                         chat=chat)
                 try:
-                    task = query.one()
+                    task = query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
-                    send_message("_404_ Task {} not found x.x".format(task_id), chat)
+                    task_not_found_msg(task_id, chat)
                     return
 
                 if text == '':
                     for i in task.dependencies.split(',')[:-1]:
                         i = int(i)
-                        q = db.session.query(Task).filter_by(id=i, chat=chat)
+                        q = db.session.query(Task).filter_by(id=i,\
+                                                             chat=chat)
                         t = q.one()
-                        t.parents = t.parents.replace('{},'.format(task.id), '')
+                        t.parents = t.parents.replace('{},'\
+                                                      .format(task.id), '')
 
                     task.dependencies = ''
-                    send_message("Dependencies removed from task {}".format(task_id), chat)
+                    send_message("Dependencies removed from task {}"\
+                                 .format(task_id), chat)
                 else:
                     for depid in text.split(' '):
                         if not depid.isdigit():
-                            send_message("All dependencies ids must be numeric, and not {}".format(depid), chat)
+                            send_message("All dependencies ids must be"
+                                          " numeric, and not {}"\
+                                          .format(depid), chat)
                         else:
                             depid = int(depid)
-                            query = db.session.query(Task).filter_by(id=depid, chat=chat)
+                            query = db.session.query(Task)\
+                                                     .filter_by(id=depid,\
+                                                     chat=chat)
                             try:
-                                taskdep = query.one()
-                                taskdep.parents += str(task.id) + ','
-                            except sqlalchemy.orm.exc.NoResultFound:
-                                send_message("_404_ Task {} not found x.x".format(depid), chat)
-                                continue
+                                taskdep = query_one(depid, chat)
+                                list_dependencies = taskdep.dependencies\
+                                                           .split(',')
 
+                                if search_parent(task, taskdep.id, chat):
+                                    taskdep.parents += str(task.id) + ','
+                                else:
+                                    send_message("Essa tarefa já é filha"
+                                                  " da sub tarefa", chat)
+                                    break
+                            except sqlalchemy.orm.exc.NoResultFound:
+                                task_not_found_msg(task_id, chat)
+                                continue
                             deplist = task.dependencies.split(',')
                             if str(depid) not in deplist:
                                 task.dependencies += str(depid) + ','
 
                 db.session.commit()
+                text_message = 'Task {} dependencies up to date'
+                send_message(text_message\
+                             .format(task_id), chat)
                 send_message("Task {} dependencies up to date".format(task_id), chat)
+
         elif command == '/priority':
             text = ''
             if msg != '':
