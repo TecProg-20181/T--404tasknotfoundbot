@@ -37,22 +37,26 @@ HELP = """
  /help
 """
 
+
 def get_url(url):
     response = requests.get(url)
     content = response.content.decode("utf8")
     return content
 
+
 def get_json_from_url(url):
     content = get_url(url)
-    js = json.loads(content)
-    return js
+    json_from_url = json.loads(content)
+    return json_from_url
+
 
 def get_updates(offset=None):
     url = URL + "getUpdates?timeout=100"
     if offset:
         url += "&offset={}".format(offset)
-    js = get_json_from_url(url)
-    return js
+    json = get_json_from_url(url)
+    return json
+
 
 def send_message(text, chat_id, reply_markup=None):
     text = urllib.parse.quote_plus(text)
@@ -61,6 +65,7 @@ def send_message(text, chat_id, reply_markup=None):
         url += "&reply_markup={}".format(reply_markup)
     get_url(url)
 
+
 def get_last_update_id(updates):
     update_ids = []
     for update in updates["result"]:
@@ -68,12 +73,14 @@ def get_last_update_id(updates):
 
     return max(update_ids)
 
+
 def deps_text(task, chat, preceed=''):
     text = ''
-
-    for i in range(len(task.dependencies.split(',')[:-1])):
+    lenght_dependency = len(task.dependencies.split(',')[:-1])
+    range_dependency = range(lenght_dependency)
+    for each_dependency in range_dependency:
         line = preceed
-        query = db.session.query(Task).filter_by(id=int(task.dependencies.split(',')[:-1][i]), chat=chat)
+        query = db.session.query(Task).filter_by(id=int(task.dependencies.split(',')[:-1][each_dependency]), chat=chat)
         dep = query.one()
 
         icon = '\U0001F195'
@@ -82,7 +89,7 @@ def deps_text(task, chat, preceed=''):
         elif dep.status == 'DONE':
             icon = '\U00002611'
 
-        if i + 1 == len(task.dependencies.split(',')[:-1]):
+        if each_dependency + 1 == lenght_dependency:
             line += '└── [[{}]] {} {}\n'.format(dep.id, icon, dep.name)
             line += deps_text(dep, chat, preceed + '    ')
         else:
@@ -115,10 +122,12 @@ def handle_updates(updates):
             print('Can\'t process! {}'.format(update))
             return
 
-        command = message["text"].split(" ", 1)[0]
+        split_message = message["text"].split(" ", 1)
+        command = split_message[0]
         msg = ''
-        if len(message["text"].split(" ", 1)) > 1:
-            msg = message["text"].split(" ", 1)[1].strip()
+        lengh_message = len(message["text"].split(" ", 1))
+        if lengh_message > 1:
+            msg = split_message[1].strip()
 
         chat = message["chat"]["id"]
 
@@ -128,10 +137,9 @@ def handle_updates(updates):
             text = ''
             if msg != '':
                 if len(msg.split(', ')) > 1:
-                    text = msg.split(', ')[-1]
-                msg = msg.split(', ', 1)[0]
+                    text = msg.split(', ')[-1]  # get the priority
+                msg = msg.split(', ', 1)[0]  # get the name task
             if text == '':
-                # priority = ''
                 task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority='')
                 send_message("New task *TODO* [[{}]] {}".format(task.id, task.name), chat)
             else:
@@ -142,10 +150,8 @@ def handle_updates(updates):
                     task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority=priority)
                     send_message("New task *TODO* [[{}]] {} with priority {}".format(task.id, task.name, task.priority), chat)
 
-            # task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority='')
             db.session.add(task)
             db.session.commit()
-            #send_message("New task *TODO* [[{}]] {}".format(task.id, task.name), chat)
 
         elif command == '/rename':
             text = ''
@@ -190,8 +196,8 @@ def handle_updates(updates):
                 db.session.add(dtask)
 
                 for t in task.dependencies.split(',')[:-1]:
-                    qy = db.session.query(Task).filter_by(id=int(t), chat=chat)
-                    t = qy.one()
+                    query = db.session.query(Task).filter_by(id=int(t), chat=chat)
+                    t = query.one()
                     t.parents += '{},'.format(dtask.id)
 
                 db.session.commit()
@@ -209,8 +215,8 @@ def handle_updates(updates):
                     send_message("_404_ Task {} not found x.x".format(task_id), chat)
                     return
                 for t in task.dependencies.split(',')[:-1]:
-                    qy = db.session.query(Task).filter_by(id=int(t), chat=chat)
-                    t = qy.one()
+                    query = db.session.query(Task).filter_by(id=int(t), chat=chat)
+                    t = query.one()
                     t.parents = t.parents.replace('{},'.format(task.id), '')
                 db.session.delete(task)
                 db.session.commit()
