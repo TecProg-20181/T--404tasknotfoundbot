@@ -155,6 +155,8 @@ class BotFunctions(HandleBot):
 
         if text == '':
             task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority='')
+            db.session.add(task)
+            db.session.commit()
             self.send_message("New task *TODO* [[{}]] {}".format(task.id, task.name), chat)
         else:
             if text.lower() not in ['high', 'medium', 'low']:
@@ -162,9 +164,10 @@ class BotFunctions(HandleBot):
             else:
                 priority = text.lower()
                 task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority=priority)
+                db.session.add(task)
+                db.session.commit()
                 self.send_message("New task *TODO* [[{}]] {} with priority {}".format(task.id, task.name, task.priority), chat)
-        db.session.add(task)
-        db.session.commit()
+
 
     def rename(self, msg, chat):
         text = ''
@@ -443,6 +446,7 @@ class BotFunctions(HandleBot):
             command = split_message[0]
             msg = ''
             lengh_message = len(message["text"].split(" ", 1))
+
             if lengh_message > 1:
                 msg = split_message[1].strip()
 
