@@ -106,18 +106,19 @@ class HandleBot():
         task = query.one()
         return task
 
-    def search_parent(self, task, target, chat):
+    def check_dependency(self, task, target, chat):
         if not task.parents == '':
-            parent_id = task.parents.split(',')
-            parent_id.pop()
+            epic_id = task.parents.split(',')
+            epic_id.pop()
 
-            numbers = [ int(id_pai) for id_pai in parent_id ]
+            numbers = [ int(id_epic) for id_epic in epic_id ]
 
             if target in numbers:
                 return False
             else:
-                parent = query_one(numbers[0], chat)
-                return search_parent(parent, target, chat)
+                query = db.session.query(Task).filter_by(id=numbers[0],chat=chat)
+                epic_id = query.one()
+                return check_dependency(parent, target, chat)
 
         return True
     def puts_icon_to_priority(self,task):
@@ -129,6 +130,10 @@ class HandleBot():
         elif task == 'high':
             icon_priority += '\U0000203C'
         return icon_priority
+
+    def four0four(self,chat,task_id):
+        self.send_message("_404_ Task {} not found, 404taskbot working as intended".format(task_id), chat)
+        return True
 
 ##Functions for the bot
 class BotFunctions(HandleBot):
@@ -168,8 +173,7 @@ class BotFunctions(HandleBot):
             try:
                 task = query.one()
             except sqlalchemy.orm.exc.NoResultFound:
-                self.send_message("_404_ Task {} not found x.x".format(task_id), chat)
-                return
+                self.four0four(chat,task_id)
 
             if text == '':
                 self.send_message("You want to modify task {}, but you didn't provide any new text".format(task_id), chat)
@@ -189,7 +193,7 @@ class BotFunctions(HandleBot):
             try:
                 task = query.one()
             except sqlalchemy.orm.exc.NoResultFound:
-                self.send_message("_404_ Task {} not found x.x".format(task_id), chat)
+                self.four0four(chat,task_id)
                 return
 
             dtask = Task(chat=task.chat, name=task.name, status=task.status, dependencies=task.dependencies,
@@ -213,7 +217,7 @@ class BotFunctions(HandleBot):
             try:
                 task = query.one()
             except sqlalchemy.orm.exc.NoResultFound:
-                self.send_message("_404_ Task {} not found x.x".format(task_id), chat)
+                self.four0four(chat,task_id)
                 return
             for t in task.dependencies.split(',')[:-1]:
                 qy = db.session.query(Task).filter_by(id=int(t), chat=chat)
@@ -237,7 +241,7 @@ class BotFunctions(HandleBot):
             try:
                 task = query.one()
             except sqlalchemy.orm.exc.NoResultFound:
-                self.send_message("_404_ Task {} not found x.x".format(task_id), chat)
+                self.four0four(chat,task_id)
                 return
             task.status = 'TODO'
             db.session.commit()
@@ -251,7 +255,7 @@ class BotFunctions(HandleBot):
             try:
                 task = query.one()
             except sqlalchemy.orm.exc.NoResultFound:
-                self.send_message("_404_ Task {} not found x.x".format(task_id), chat)
+                self.four0four(chat,task_id)
                 return
             task.status = 'DOING'
             db.session.commit()
@@ -265,7 +269,7 @@ class BotFunctions(HandleBot):
             try:
                 task = query.one()
             except sqlalchemy.orm.exc.NoResultFound:
-                self.send_message("_404_ Task {} not found x.x".format(task_id), chat)
+                self.four0four(chat,task_id)
                 return
             task.status = 'DONE'
             db.session.commit()
@@ -367,21 +371,19 @@ class BotFunctions(HandleBot):
                             taskdep = query.one()
                             list_dependencies = taskdep.dependencies.split(',')
 
-                            if self.search_parent(task, taskdep.id, chat):
+                            if self.check_dependency(task, taskdep.id, chat):
                                 taskdep.parents += str(task.id) + ','
                             else:
-                                send_message("As tarefas já estão associadas", chat)
+                                self.send_message("As tarefas já estão associadas", chat)
                                 break
                         except sqlalchemy.orm.exc.NoResultFound:
-                            task_not_found_msg(task_id, chat)
+                            self.four0four(chat,task_id)
                             continue
                         deplist = task.dependencies.split(',')
                         if str(depid) not in deplist:
                             task.dependencies += str(depid) + ','
 
             db.session.commit()
-            text_message = 'Task {} dependencies up to date'
-            self.send_message(text_message.format(task_id), chat)
             self.send_message("Task {} dependencies up to date".format(task_id), chat)
 
     def priority(self,msg,chat):
@@ -399,7 +401,7 @@ class BotFunctions(HandleBot):
             try:
                 task = query.one()
             except sqlalchemy.orm.exc.NoResultFound:
-                self.send_message("_404_ Task {} not found x.x".format(task_id), chat)
+                self.four0four(chat,task_id)
                 return
 
             if text == '':
