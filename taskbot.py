@@ -23,6 +23,7 @@ URL = "https://api.telegram.org/bot{}/".format(TOKEN.rstrip())
 
 HELP = """
  /new NOME
+ /new NOME, PRIORITY{low, medium, high}
  /todo ID
  /doing ID
  /done ID
@@ -124,10 +125,27 @@ def handle_updates(updates):
         print(command, msg, chat)
 
         if command == '/new':
-            task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority='')
+            text = ''
+            if msg != '':
+                if len(msg.split(', ')) > 1:
+                    text = msg.split(', ')[-1]
+                msg = msg.split(', ', 1)[0]
+            if text == '':
+                # priority = ''
+                task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority='')
+                send_message("New task *TODO* [[{}]] {}".format(task.id, task.name), chat)
+            else:
+                if text.lower() not in ['high', 'medium', 'low']:
+                    send_message("The priority *must be* one of the following: high, medium, low", chat)
+                else:
+                    priority = text.lower()
+                    task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority=priority)
+                    send_message("New task *TODO* [[{}]] {} with priority {}".format(task.id, task.name, task.priority), chat)
+
+            # task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority='')
             db.session.add(task)
             db.session.commit()
-            send_message("New task *TODO* [[{}]] {}".format(task.id, task.name), chat)
+            #send_message("New task *TODO* [[{}]] {}".format(task.id, task.name), chat)
 
         elif command == '/rename':
             text = ''
