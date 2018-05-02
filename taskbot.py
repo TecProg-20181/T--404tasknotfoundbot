@@ -23,6 +23,7 @@ URL = "https://api.telegram.org/bot{}/".format(TOKEN.rstrip())
 
 HELP = """
  /new NOME
+ /new NOME, PRIORITY{low, medium, high}
  /todo ID
  /doing ID
  /done ID
@@ -32,6 +33,7 @@ HELP = """
  /dependson ID ID...
  /duplicate ID
  /priority ID PRIORITY{low, medium, high}
+ /showpriority
  /help
 """
 
@@ -92,6 +94,17 @@ def deps_text(task, chat, preceed=''):
     return text
 
 
+def puts_icon_to_priority(task):
+    icon_priority = ''
+    if task == 'low':
+        icon_priority += '\U00002755'
+    elif task == 'medium':
+        icon_priority += '\U00002757'
+    elif task == 'high':
+        icon_priority += '\U0000203C'
+    return icon_priority
+
+
 def handle_updates(updates):
     for update in updates["result"]:
         if 'message' in update:
@@ -112,10 +125,27 @@ def handle_updates(updates):
         print(command, msg, chat)
 
         if command == '/new':
-            task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority='')
+            text = ''
+            if msg != '':
+                if len(msg.split(', ')) > 1:
+                    text = msg.split(', ')[-1]
+                msg = msg.split(', ', 1)[0]
+            if text == '':
+                # priority = ''
+                task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority='')
+                send_message("New task *TODO* [[{}]] {}".format(task.id, task.name), chat)
+            else:
+                if text.lower() not in ['high', 'medium', 'low']:
+                    send_message("The priority *must be* one of the following: high, medium, low", chat)
+                else:
+                    priority = text.lower()
+                    task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority=priority)
+                    send_message("New task *TODO* [[{}]] {} with priority {}".format(task.id, task.name, task.priority), chat)
+
+            # task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority='')
             db.session.add(task)
             db.session.commit()
-            send_message("New task *TODO* [[{}]] {}".format(task.id, task.name), chat)
+            #send_message("New task *TODO* [[{}]] {}".format(task.id, task.name), chat)
 
         elif command == '/rename':
             text = ''
@@ -187,6 +217,12 @@ def handle_updates(updates):
                 send_message("Task [[{}]] deleted".format(task_id), chat)
 
         elif command == '/todo':
+            text = ''
+            if msg != '':
+                if len(msg.split(' ', 1)) > 1:
+                    text = msg.split(' ', 1)[1]
+                msg = msg.split(' ', 1)[0]
+
             if not msg.isdigit():
                 send_message("You must inform the task id", chat)
             else:
@@ -253,14 +289,39 @@ def handle_updates(updates):
             query = db.session.query(Task).filter_by(status='TODO', chat=chat).order_by(Task.id)
             a += '\n\U0001F195 *TODO*\n'
             for task in query.all():
+                icon_priority = puts_icon_to_priority(task.priority)
                 a += '[[{}]] {}\n'.format(task.id, task.name)
             query = db.session.query(Task).filter_by(status='DOING', chat=chat).order_by(Task.id)
             a += '\n\U000023FA *DOING*\n'
             for task in query.all():
+                icon_priority = puts_icon_to_priority(task.priority)
                 a += '[[{}]] {}\n'.format(task.id, task.name)
             query = db.session.query(Task).filter_by(status='DONE', chat=chat).order_by(Task.id)
             a += '\n\U00002611 *DONE*\n'
             for task in query.all():
+                icon_priority = puts_icon_to_priority(task.priority)
+                a += '[[{}]] {}\n'.format(task.id, task.name)
+
+            send_message(a, chat)
+
+        elif command == '/showpriority':
+            a = ''
+
+            a += '\U0001F4DD _Priority_\n'
+            query = db.session.query(Task).filter_by(priority='high', chat=chat).order_by(Task.id)
+            a += '\n\U0000203C High Priority task\n'
+            for task in query.all():
+                icon_priority = puts_icon_to_priority(task.priority)
+                a += '[[{}]] {}\n'.format(task.id, task.name)
+            query = db.session.query(Task).filter_by(priority='medium', chat=chat).order_by(Task.id)
+            a += '\n\U00002757 Medium Priority task\n'
+            for task in query.all():
+                icon_priority = puts_icon_to_priority(task.priority)
+                a += '[[{}]] {}\n'.format(task.id, task.name)
+            query = db.session.query(Task).filter_by(priority='low', chat=chat).order_by(Task.id)
+            a += '\n\U00002755 Low Priority task\n'
+            for task in query.all():
+                icon_priority = puts_icon_to_priority(task.priority)
                 a += '[[{}]] {}\n'.format(task.id, task.name)
 
             send_message(a, chat)
