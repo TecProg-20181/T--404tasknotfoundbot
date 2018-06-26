@@ -6,6 +6,7 @@ import urllib
 import sqlalchemy
 
 import db
+from db import Task
 
 class HandleBot():
     def __init__(self):
