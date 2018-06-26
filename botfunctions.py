@@ -190,23 +190,23 @@ class BotFunctions(HandleBot):
         self.send_message(task_list, chat)
 
     def showpriority(self, msg, chat):
-        a = ''
+        task_list = ''
 
-        a += '\U0001F4DD _Priority_\n'
+        task_list += '\U0001F4DD _Priority_\n'
         query = db.session.query(Task).filter_by(priority='high', chat=chat).order_by(Task.id)
-        a += '\n\U0000203C High Priority task\n'
+        task_list += '\n\U0000203C High Priority task\n'
         for task in query.all():
-            a += '[[{}]] {}\n'.format(task.id, task.name)
+            task_list += '[[{}]] {}\n'.format(task.id, task.name)
         query = db.session.query(Task).filter_by(priority='medium', chat=chat).order_by(Task.id)
-        a += '\n\U00002757 Medium Priority task\n'
+        task_list += '\n\U00002757 Medium Priority task\n'
         for task in query.all():
-            a += '[[{}]] {}\n'.format(task.id, task.name)
+            task_list += '[[{}]] {}\n'.format(task.id, task.name)
         query = db.session.query(Task).filter_by(priority='low', chat=chat).order_by(Task.id)
-        a += '\n\U00002755 Low Priority task\n'
+        task_list += '\n\U00002755 Low Priority task\n'
         for task in query.all():
-            a += '[[{}]] {}\n'.format(task.id, task.name)
+            task_list += '[[{}]] {}\n'.format(task.id, task.name)
 
-        self.send_message(a, chat)
+        self.send_message(task_list, chat)
 
     def dependson(self, msg, chat):
         text = ''
