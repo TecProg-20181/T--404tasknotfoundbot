@@ -177,11 +177,11 @@ class BotFunctions(HandleBot):
         query = db.session.query(Task).filter_by(status='TODO', chat=chat).order_by(Task.id)
         task_list += '\n\U0001F195 *TO DO*\n'
         for task in query.all():
-            task_list += '[[{}]] {}\n'.format(task.id, task.name)
+            task_list += '[[{}]] {}\n  Deadline:{}\n'.format(task.id, task.name, task.duedate)
         query = db.session.query(Task).filter_by(status='DOING', chat=chat).order_by(Task.id)
         task_list += '\n\U000023FA *DOING*\n'
         for task in query.all():
-            task_list += '[[{}]] {}\n'.format(task.id, task.name)
+            task_list += '[[{}]] {}\n  Deadline:{}\n'.format(task.id, task.name, task.duedate)
         query = db.session.query(Task).filter_by(status='DONE', chat=chat).order_by(Task.id)
         task_list += '\n\U00002611 *DONE*\n'
         for task in query.all():
@@ -293,6 +293,42 @@ class BotFunctions(HandleBot):
                     self.send_message("*Task {}* priority has priority *{}*".format(task_id, text.lower()), chat)
             db.session.commit()
 
+    def date_format(self, text):
+        try:
+            datetime.strptime(text, '%m/%d/%Y')
+            return True
+        except ValueError:
+            return False
+
+    def duedate(self, msg, chat):
+        text = ''
+        if msg != '':
+            if len(msg.split(' ', 1)) > 1:
+                text = msg.split(' ', 1)[1]
+                msg = msg.split(' ', 1)[0]
+
+                if not msg.isdigit():
+                    self.send_message("You must inform the task id", chat)
+                else:
+                    task_id = int(msg)
+                    query = db.session.query(Task).filter_by(id=task_id, chat=chat)
+                    try:
+                        task = query.one()
+                    except sqlalchemy.orm.exc.NoResultFound:
+                        self.send_message("_404_ Task {} not found x.x".format(task_id), chat)
+                        return
+
+                    if text == '':
+                        self.send_message("You want to give a duedate to task {}, but you didn't provide any date".format(task_id), chat)
+                        return
+                    else:
+                        if not self.date_format(text):
+                            self.send_message("The duedate needs to be on US Format: mm/dd/YYYY", chat)
+                        else:
+                            task.duedate = datetime.strptime(text, '%m/%d/%Y')
+                            self.send_message("Task {} deadline is on: {}".format(task_id, text), chat)
+                    db.session.commit()
+
     def start(self, chat):
         self.send_message("Come closer, I've got some merch that might be helpful.", chat)
         self.send_message(self.HELP, chat)
@@ -349,5 +385,7 @@ class BotFunctions(HandleBot):
                 self.start(chat)
             elif command == '/help':
                 self.helpr(chat)
+            elif command == '/duedate':
+                self.duedate(msg, chat)
             else:
                 self.send_message("So sorry m8. That's beyond me.", chat)
