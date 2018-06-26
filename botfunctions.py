@@ -15,7 +15,7 @@ class BotFunctions(HandleBot):
     def __init__(self):
         HandleBot.__init__(self)
 
-    def new(self, msg, chat):
+    def newTask(self, msg, chat):
         text = ''
         if msg != '':
                 if len(msg.split(', ')) > 1:
@@ -38,7 +38,7 @@ class BotFunctions(HandleBot):
                 self.send_message("New task *TODO* [[{}]] {} with priority {}".format(task.id, task.name, task.priority), chat)
 
 
-    def rename(self, msg, chat):
+    def renameTask(self, msg, chat):
         text = ''
         if msg != '':
             if len(msg.split(' ', 1)) > 1:
@@ -88,7 +88,7 @@ class BotFunctions(HandleBot):
             db.session.commit()
             self.send_message("New task *TODO* [[{}]] {}".format(dtask.id, dtask.name), chat)
 
-    def delete(self, msg, chat):
+    def deleteTask(self, msg, chat):
         if not msg.isdigit():
             self.send_message("You must inform the task id", chat)
         else:
@@ -103,7 +103,7 @@ class BotFunctions(HandleBot):
                 query = db.session.query(Task).filter_by(id=int(t), chat=chat)
                 t = query.one()
                 t.parents = t.parents.replace('{},'.format(task.id), '')
-            db.session.delete(task)
+            db.session.deleteTask(task)
             db.session.commit()
             self.send_message("Task [[{}]] deleted".format(task_id), chat)
 
@@ -158,7 +158,7 @@ class BotFunctions(HandleBot):
             db.session.commit()
             self.send_message("*DONE* task [[{}]] {}".format(task.id, task.name), chat)
 
-    def lista(self, msg, chat):
+    def listTask(self, msg, chat):
         task_list = ''
 
         task_list += '\U0001F4CB Task List\n'
@@ -324,13 +324,13 @@ class BotFunctions(HandleBot):
             print(command, msg, chat)
 
             if command == '/new':
-                self.new(msg, chat)
+                self.newTask(msg, chat)
             elif command == '/rename':
-                self.rename(msg, chat)
+                self.renameTask(msg, chat)
             elif command == '/duplicate':
                 self.duplicate(msg, chat)
             elif command == '/delete':
-                self.delete(msg, chat)
+                self.deleteTask(msg, chat)
             elif command == '/todo':
                 self.todo(msg, chat)
             elif command == '/doing':
@@ -338,7 +338,7 @@ class BotFunctions(HandleBot):
             elif command == '/done':
                 self.done(msg, chat)
             elif command == '/list':
-                self.lista(msg, chat)
+                self.listTask(msg, chat)
             elif command == '/showpriority':
                 self.showpriority(msg, chat)
             elif command == '/dependson':
