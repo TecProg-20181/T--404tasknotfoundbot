@@ -25,7 +25,7 @@ class HandleBot():
 /duplicate ID
 /priority ID PRIORITY{low, medium, high}
 /showpriority
-/duedate ID DUEDATE{AAAA/MM/DD}
+/duedate ID DATE{MM/DD/YYYY}
 /help
 """
     def get_token(self):
