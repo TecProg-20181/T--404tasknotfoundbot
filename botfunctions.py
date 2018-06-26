@@ -292,6 +292,14 @@ class BotFunctions(HandleBot):
                     self.send_message("*Task {}* priority has priority *{}*".format(task_id, text.lower()), chat)
             db.session.commit()
 
+    def get_github_user_data(self):
+        loginText = 'login.txt'
+        fileOpen = open(loginText,'r')
+        username = fileOpen.readline(1)
+        password = fileOpen.readline(2)
+        return username,password
+
+
     def start(self, chat):
         self.send_message("Come closer, I've got some merch that might be helpful.", chat)
         self.send_message(self.HELP, chat)
