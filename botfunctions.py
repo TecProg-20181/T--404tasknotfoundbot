@@ -8,6 +8,7 @@ import sqlalchemy
 import db
 from db import Task
 from handlebot import HandleBot
+from datetime import datetime
 
 class BotFunctions(HandleBot):
 
@@ -158,9 +159,9 @@ class BotFunctions(HandleBot):
             self.send_message("*DONE* task [[{}]] {}".format(task.id, task.name), chat)
 
     def lista(self, msg, chat):
-        a = ''
+        task_list = ''
 
-        a += '\U0001F4CB Task List\n'
+        task_list += '\U0001F4CB Task List\n'
         query = db.session.query(Task).filter_by(parents='', chat=chat).order_by(Task.id)
         for task in query.all():
             icon = '\U0001F195'
@@ -169,24 +170,24 @@ class BotFunctions(HandleBot):
             elif task.status == 'DONE':
                 icon = '\U00002611'
 
-            a += '[[{}]] {} {}\n'.format(task.id, icon, task.name)
-            a += self.deps_text(task, chat)
+            task_list += '[[{}]] {} {}\n'.format(task.id, icon, task.name)
+            task_list += self.deps_text(task, chat)
 
-        a += '\U0001F4DD _Status_\n'
+        task_list += '\U0001F4DD _Status_\n'
         query = db.session.query(Task).filter_by(status='TODO', chat=chat).order_by(Task.id)
-        a += '\n\U0001F195 *TO DO*\n'
+        task_list += '\n\U0001F195 *TO DO*\n'
         for task in query.all():
-            a += '[[{}]] {}\n'.format(task.id, task.name)
+            task_list += '[[{}]] {}\n'.format(task.id, task.name)
         query = db.session.query(Task).filter_by(status='DOING', chat=chat).order_by(Task.id)
-        a += '\n\U000023FA *DOING*\n'
+        task_list += '\n\U000023FA *DOING*\n'
         for task in query.all():
-            a += '[[{}]] {}\n'.format(task.id, task.name)
+            task_list += '[[{}]] {}\n'.format(task.id, task.name)
         query = db.session.query(Task).filter_by(status='DONE', chat=chat).order_by(Task.id)
-        a += '\n\U00002611 *DONE*\n'
+        task_list += '\n\U00002611 *DONE*\n'
         for task in query.all():
-            a += '[[{}]] {}\n'.format(task.id, task.name)
+            task_list += '[[{}]] {}\n'.format(task.id, task.name)
 
-        self.send_message(a, chat)
+        self.send_message(task_list, chat)
 
     def showpriority(self, msg, chat):
         a = ''
