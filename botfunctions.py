@@ -27,6 +27,11 @@ class BotFunctions(HandleBot):
             db.session.add(task)
             db.session.commit()
             self.send_message("New task *TODO* [[{}]] {}".format(task.id, task.name), chat)
+            self.upload_github_issue(task.name, 'ID : [{}]\n\
+                                                Name : [{}]\n\
+                                                Priority : [None]\n\
+                                                Issue created from and with 404tasknotfoundbot tasks'
+                                                 .format(task.id, task.name))
         else:
             if text.lower() not in ['high', 'medium', 'low']:
                 self.send_message("The priority *must be* one of the following: high, medium, low", chat)
@@ -36,6 +41,12 @@ class BotFunctions(HandleBot):
                 db.session.add(task)
                 db.session.commit()
                 self.send_message("New task *TODO* [[{}]] {} with priority {}".format(task.id, task.name, task.priority), chat)
+                self.upload_github_issue(task.name, 'ID : [{}]\n\
+                                                     Name : [{}]\n\
+                                                     Priority : [{}]\n\
+                                                     Issue created from and with 404tasknotfoundbot tasks'
+                                                     .format(task.id, task.name,task.priority))
+
 
 
     def renameTask(self, msg, chat):
