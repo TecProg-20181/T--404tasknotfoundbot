@@ -28,6 +28,18 @@ class Task(Base):
             self.id, self.chat, self.name, self.status
         )
 
+class Log(Base):
+    __tablename__ = 'logs'
+
+    id = Column(Integer, primary_key=True)
+    log = Column(String)
+
+    def __repr__(self):
+        return "<Log(id={}, log='{}')>".format(
+            self.id, self.log
+        )
+
+
 Base.metadata.create_all(engine)
 
 if __name__ == '__main__':
