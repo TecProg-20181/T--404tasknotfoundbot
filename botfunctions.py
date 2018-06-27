@@ -103,7 +103,7 @@ class BotFunctions(HandleBot):
                 query = db.session.query(Task).filter_by(id=int(t), chat=chat)
                 t = query.one()
                 t.parents = t.parents.replace('{},'.format(task.id), '')
-            db.session.deleteTask(task)
+            db.session.delete(task)
             db.session.commit()
             self.send_message("Task [[{}]] deleted".format(task_id), chat)
 
@@ -263,6 +263,22 @@ class BotFunctions(HandleBot):
 
             db.session.commit()
             self.send_message("Task {} dependencies up to date".format(task_id), chat)
+
+    def check_dependency(self, task, target, chat):
+        if not task.parents == '':
+            epic_id = task.parents.split(',')
+            epic_id.pop()
+
+            numbers = [int(id_epic) for id_epic in epic_id]
+
+            if target in numbers:
+                return False
+            else:
+                query = db.session.query(Task).filter_by(id=numbers[0], chat=chat)
+                epic_id = query.one()
+                return self.check_dependency(epic_id, target, chat)
+
+        return True
 
     def priority(self, msg, chat):
         text = ''
