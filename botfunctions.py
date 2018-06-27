@@ -377,6 +377,13 @@ class BotFunctions(HandleBot):
                             task.duedate = datetime.strptime(text, '%m/%d/%Y')
                             self.send_message("Task {} deadline is on: {}".format(task_id, text), chat)
                     db.session.commit()
+                    
+    def observer(self, text):
+        obs = Log(log=text)
+        db.session.add(obs)
+        db.session.commit()
+#        for obs in query.all():
+#        obs_list += '[[{}]]\n'.format(log.id, log.log
 
     def start(self, chat):
         self.send_message("Come closer, I've got some merch that might be helpful.", chat)
