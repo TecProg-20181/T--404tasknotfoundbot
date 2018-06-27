@@ -224,7 +224,7 @@ class BotFunctions(HandleBot):
                 task = query.one()
 
             except sqlalchemy.orm.exc.NoResultFound:
-                task_not_found_msg(task_id, chat)
+                self.four0four(task_id, chat)
                 return
 
             if text == '':
@@ -295,10 +295,24 @@ class BotFunctions(HandleBot):
     def get_github_user_data(self):
         loginText = 'login.txt'
         fileOpen = open(loginText,'r')
-        username = fileOpen.readline(1)
-        password = fileOpen.readline(2)
-        return username,password
+        login = fileOpen.read().split('\n')
+        return login
 
+    def upload_github_issue(self,issueName,issueContent):
+        credentials = self.get_github_user_data()
+        '''Create an issue on github.com using the given parameters.'''
+        repoUrl = 'https://api.github.com/repos/TecProg-20181/T--404tasknotfoundbot/issues'
+        session = requests.session()
+        session.auth = (credentials[0],credentials[1])
+        issue = {'title': issueName,
+                 'body': issueContent,
+                 }
+        r = session.post(repoUrl, json.dumps(issue))
+        if r.status_code == 201:
+            print ('Successfully created Issue {0:s}'.format(issueName))
+        else:
+            print ('Could not create Issue {0:s}'.format(issueName))
+            print('Response:', r.content)
 
     def start(self, chat):
         self.send_message("Come closer, I've got some merch that might be helpful.", chat)
@@ -334,6 +348,8 @@ class BotFunctions(HandleBot):
                 self.new(msg, chat)
             elif command == '/rename':
                 self.rename(msg, chat)
+            elif command == '/issue':
+                self.upload_github_issue(msg,chat)
             elif command == '/duplicate':
                 self.duplicate(msg, chat)
             elif command == '/delete':

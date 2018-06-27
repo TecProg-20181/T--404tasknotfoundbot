@@ -24,6 +24,7 @@ class HandleBot():
 /duplicate ID
 /priority ID PRIORITY{low, medium, high}
 /showpriority
+/issue title body
 /help
 """
     def get_token(self):
@@ -102,7 +103,7 @@ class HandleBot():
         task = query.one()
         return task
 
-    def check_dependency(self, task, target, chat):
+    def check_dependency(task, target, chat):
         if not task.parents == '':
             epic_id = task.parents.split(',')
             epic_id.pop()
