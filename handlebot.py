@@ -26,6 +26,7 @@ class HandleBot():
 /showpriority
 /duedate ID DATE{MM/DD/YYYY}
 /help
+/log
 """
     def get_token(self):
         file_token = "token.txt"
