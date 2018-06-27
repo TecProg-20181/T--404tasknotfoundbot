@@ -377,7 +377,7 @@ class BotFunctions(HandleBot):
                             task.duedate = datetime.strptime(text, '%m/%d/%Y')
                             self.send_message("Task {} deadline is on: {}".format(task_id, text), chat)
                     db.session.commit()
-                    
+
     def observer(self, text):
         obs = Log(log=text)
         db.session.add(obs)
@@ -407,6 +407,7 @@ class BotFunctions(HandleBot):
             command = split_message[0]
             msg = ''
             lengh_message = len(message["text"].split(" ", 1))
+            self.observer(command)
 
             if lengh_message > 1:
                 msg = split_message[1].strip()
