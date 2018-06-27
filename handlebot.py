@@ -4,7 +4,6 @@ import time
 import urllib
 
 import sqlalchemy
-
 import db
 from db import Task
 
@@ -104,7 +103,7 @@ class HandleBot():
         task = query.one()
         return task
 
-    def check_dependency(self, task, target, chat):
+    def check_dependency(task, target, chat):
         if not task.parents == '':
             epic_id = task.parents.split(',')
             epic_id.pop()

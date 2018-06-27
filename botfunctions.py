@@ -27,6 +27,11 @@ class BotFunctions(HandleBot):
             db.session.add(task)
             db.session.commit()
             self.send_message("New task *TODO* [[{}]] {}".format(task.id, task.name), chat)
+            self.upload_github_issue(task.name, 'ID : [{}]\n\
+                                                Name : [{}]\n\
+                                                Priority : [None]\n\
+                                                Issue created from and with 404tasknotfoundbot tasks'
+                                                 .format(task.id, task.name))
         else:
             if text.lower() not in ['high', 'medium', 'low']:
                 self.send_message("The priority *must be* one of the following: high, medium, low", chat)
@@ -36,6 +41,12 @@ class BotFunctions(HandleBot):
                 db.session.add(task)
                 db.session.commit()
                 self.send_message("New task *TODO* [[{}]] {} with priority {}".format(task.id, task.name, task.priority), chat)
+                self.upload_github_issue(task.name, 'ID : [{}]\n\
+                                                     Name : [{}]\n\
+                                                     Priority : [{}]\n\
+                                                     Issue created from and with 404tasknotfoundbot tasks'
+                                                     .format(task.id, task.name,task.priority))
+
 
 
     def renameTask(self, msg, chat):
@@ -103,7 +114,7 @@ class BotFunctions(HandleBot):
                 query = db.session.query(Task).filter_by(id=int(t), chat=chat)
                 t = query.one()
                 t.parents = t.parents.replace('{},'.format(task.id), '')
-            db.session.deleteTask(task)
+            db.session.delete(task)
             db.session.commit()
             self.send_message("Task [[{}]] deleted".format(task_id), chat)
 
@@ -225,7 +236,7 @@ class BotFunctions(HandleBot):
                 task = query.one()
 
             except sqlalchemy.orm.exc.NoResultFound:
-                task_not_found_msg(task_id, chat)
+                self.four0four(task_id, chat)
                 return
 
             if text == '':
@@ -264,6 +275,22 @@ class BotFunctions(HandleBot):
             db.session.commit()
             self.send_message("Task {} dependencies up to date".format(task_id), chat)
 
+    def check_dependency(self, task, target, chat):
+        if not task.parents == '':
+            epic_id = task.parents.split(',')
+            epic_id.pop()
+
+            numbers = [int(id_epic) for id_epic in epic_id]
+
+            if target in numbers:
+                return False
+            else:
+                query = db.session.query(Task).filter_by(id=numbers[0], chat=chat)
+                epic_id = query.one()
+                return self.check_dependency(epic_id, target, chat)
+
+        return True
+
     def priority(self, msg, chat):
         text = ''
         if msg != '':
@@ -292,6 +319,28 @@ class BotFunctions(HandleBot):
                     task.priority = text.lower()
                     self.send_message("*Task {}* priority has priority *{}*".format(task_id, text.lower()), chat)
             db.session.commit()
+
+    def get_github_user_data(self):
+        loginText = 'login.txt'
+        fileOpen = open(loginText,'r')
+        login = fileOpen.read().split('\n')
+        return login
+
+    def upload_github_issue(self,issueName,issueContent):
+        credentials = self.get_github_user_data()
+        '''Create an issue on github.com using the given parameters.'''
+        repoUrl = 'https://api.github.com/repos/TecProg-20181/T--404tasknotfoundbot/issues'
+        session = requests.session()
+        session.auth = (credentials[0],credentials[1])
+        issue = {'title': issueName,
+                 'body': issueContent,
+                 }
+        r = session.post(repoUrl, json.dumps(issue))
+        if r.status_code == 201:
+            print ('Successfully created Issue {0:s}'.format(issueName))
+        else:
+            print ('Could not create Issue {0:s}'.format(issueName))
+            print('Response:', r.content)
 
     def date_format(self, text):
         try:
