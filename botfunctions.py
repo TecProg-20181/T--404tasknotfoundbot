@@ -181,19 +181,23 @@ class BotFunctions(HandleBot):
                 icon = '\U000023FA'
             elif task.status == 'DONE':
                 icon = '\U00002611'
-
-            task_list += '[[{}]] {} {}\n'.format(task.id, icon, task.name)
-            task_list += self.deps_text(task, chat)
+            duedateprint = '\n  Deadline: {}'.format(task.duedate)
+            if task.duedate == None:
+                task_list += '[[{}]] {} {}\n'.format(task.id, icon, task.name)
+                task_list += self.deps_text(task, chat)
+            else:
+                task_list += '[[{}]] {} {} {}\n'.format(task.id, icon, task.name, duedateprint)
+                task_list += self.deps_text(task, chat)
 
         task_list += '\U0001F4DD _Status_\n'
         query = db.session.query(Task).filter_by(status='TODO', chat=chat).order_by(Task.id)
         task_list += '\n\U0001F195 *TO DO*\n'
         for task in query.all():
-            task_list += '[[{}]] {}\n  Deadline:{}\n'.format(task.id, task.name, task.duedate)
+            task_list += '[[{}]] {}\n'.format(task.id, task.name)
         query = db.session.query(Task).filter_by(status='DOING', chat=chat).order_by(Task.id)
         task_list += '\n\U000023FA *DOING*\n'
         for task in query.all():
-            task_list += '[[{}]] {}\n  Deadline:{}\n'.format(task.id, task.name, task.duedate)
+            task_list += '[[{}]] {}\n'.format(task.id, task.name)
         query = db.session.query(Task).filter_by(status='DONE', chat=chat).order_by(Task.id)
         task_list += '\n\U00002611 *DONE*\n'
         for task in query.all():
