@@ -8,13 +8,14 @@ import sqlalchemy
 import db
 from db import Task
 from handlebot import HandleBot
+from datetime import datetime
 
 class BotFunctions(HandleBot):
 
     def __init__(self):
         HandleBot.__init__(self)
 
-    def new(self, msg, chat):
+    def newTask(self, msg, chat):
         text = ''
         if msg != '':
                 if len(msg.split(', ')) > 1:
@@ -37,7 +38,7 @@ class BotFunctions(HandleBot):
                 self.send_message("New task *TODO* [[{}]] {} with priority {}".format(task.id, task.name, task.priority), chat)
 
 
-    def rename(self, msg, chat):
+    def renameTask(self, msg, chat):
         text = ''
         if msg != '':
             if len(msg.split(' ', 1)) > 1:
@@ -87,7 +88,7 @@ class BotFunctions(HandleBot):
             db.session.commit()
             self.send_message("New task *TODO* [[{}]] {}".format(dtask.id, dtask.name), chat)
 
-    def delete(self, msg, chat):
+    def deleteTask(self, msg, chat):
         if not msg.isdigit():
             self.send_message("You must inform the task id", chat)
         else:
@@ -102,7 +103,7 @@ class BotFunctions(HandleBot):
                 query = db.session.query(Task).filter_by(id=int(t), chat=chat)
                 t = query.one()
                 t.parents = t.parents.replace('{},'.format(task.id), '')
-            db.session.delete(task)
+            db.session.deleteTask(task)
             db.session.commit()
             self.send_message("Task [[{}]] deleted".format(task_id), chat)
 
@@ -157,10 +158,10 @@ class BotFunctions(HandleBot):
             db.session.commit()
             self.send_message("*DONE* task [[{}]] {}".format(task.id, task.name), chat)
 
-    def lista(self, msg, chat):
-        a = ''
+    def listTask(self, msg, chat):
+        task_list = ''
 
-        a += '\U0001F4CB Task List\n'
+        task_list += '\U0001F4CB Task List\n'
         query = db.session.query(Task).filter_by(parents='', chat=chat).order_by(Task.id)
         for task in query.all():
             icon = '\U0001F195'
@@ -169,43 +170,43 @@ class BotFunctions(HandleBot):
             elif task.status == 'DONE':
                 icon = '\U00002611'
 
-            a += '[[{}]] {} {}\n'.format(task.id, icon, task.name)
-            a += self.deps_text(task, chat)
+            task_list += '[[{}]] {} {}\n'.format(task.id, icon, task.name)
+            task_list += self.deps_text(task, chat)
 
-        a += '\U0001F4DD _Status_\n'
+        task_list += '\U0001F4DD _Status_\n'
         query = db.session.query(Task).filter_by(status='TODO', chat=chat).order_by(Task.id)
-        a += '\n\U0001F195 *TO DO*\n'
+        task_list += '\n\U0001F195 *TO DO*\n'
         for task in query.all():
-            a += '[[{}]] {}\n'.format(task.id, task.name)
+            task_list += '[[{}]] {}\n  Deadline:{}\n'.format(task.id, task.name, task.duedate)
         query = db.session.query(Task).filter_by(status='DOING', chat=chat).order_by(Task.id)
-        a += '\n\U000023FA *DOING*\n'
+        task_list += '\n\U000023FA *DOING*\n'
         for task in query.all():
-            a += '[[{}]] {}\n'.format(task.id, task.name)
+            task_list += '[[{}]] {}\n  Deadline:{}\n'.format(task.id, task.name, task.duedate)
         query = db.session.query(Task).filter_by(status='DONE', chat=chat).order_by(Task.id)
-        a += '\n\U00002611 *DONE*\n'
+        task_list += '\n\U00002611 *DONE*\n'
         for task in query.all():
-            a += '[[{}]] {}\n'.format(task.id, task.name)
+            task_list += '[[{}]] {}\n'.format(task.id, task.name)
 
-        self.send_message(a, chat)
+        self.send_message(task_list, chat)
 
     def showpriority(self, msg, chat):
-        a = ''
+        task_list = ''
 
-        a += '\U0001F4DD _Priority_\n'
+        task_list += '\U0001F4DD _Priority_\n'
         query = db.session.query(Task).filter_by(priority='high', chat=chat).order_by(Task.id)
-        a += '\n\U0000203C High Priority task\n'
+        task_list += '\n\U0000203C High Priority task\n'
         for task in query.all():
-            a += '[[{}]] {}\n'.format(task.id, task.name)
+            task_list += '[[{}]] {}\n'.format(task.id, task.name)
         query = db.session.query(Task).filter_by(priority='medium', chat=chat).order_by(Task.id)
-        a += '\n\U00002757 Medium Priority task\n'
+        task_list += '\n\U00002757 Medium Priority task\n'
         for task in query.all():
-            a += '[[{}]] {}\n'.format(task.id, task.name)
+            task_list += '[[{}]] {}\n'.format(task.id, task.name)
         query = db.session.query(Task).filter_by(priority='low', chat=chat).order_by(Task.id)
-        a += '\n\U00002755 Low Priority task\n'
+        task_list += '\n\U00002755 Low Priority task\n'
         for task in query.all():
-            a += '[[{}]] {}\n'.format(task.id, task.name)
+            task_list += '[[{}]] {}\n'.format(task.id, task.name)
 
-        self.send_message(a, chat)
+        self.send_message(task_list, chat)
 
     def dependson(self, msg, chat):
         text = ''
@@ -314,6 +315,42 @@ class BotFunctions(HandleBot):
             print ('Could not create Issue {0:s}'.format(issueName))
             print('Response:', r.content)
 
+    def date_format(self, text):
+        try:
+            datetime.strptime(text, '%m/%d/%Y')
+            return True
+        except ValueError:
+            return False
+
+    def duedate(self, msg, chat):
+        text = ''
+        if msg != '':
+            if len(msg.split(' ', 1)) > 1:
+                text = msg.split(' ', 1)[1]
+                msg = msg.split(' ', 1)[0]
+
+                if not msg.isdigit():
+                    self.send_message("You must inform the task id", chat)
+                else:
+                    task_id = int(msg)
+                    query = db.session.query(Task).filter_by(id=task_id, chat=chat)
+                    try:
+                        task = query.one()
+                    except sqlalchemy.orm.exc.NoResultFound:
+                        self.send_message("_404_ Task {} not found x.x".format(task_id), chat)
+                        return
+
+                    if text == '':
+                        self.send_message("You want to give a duedate to task {}, but you didn't provide any date".format(task_id), chat)
+                        return
+                    else:
+                        if not self.date_format(text):
+                            self.send_message("The duedate needs to be on US Format: mm/dd/YYYY", chat)
+                        else:
+                            task.duedate = datetime.strptime(text, '%m/%d/%Y')
+                            self.send_message("Task {} deadline is on: {}".format(task_id, text), chat)
+                    db.session.commit()
+
     def start(self, chat):
         self.send_message("Come closer, I've got some merch that might be helpful.", chat)
         self.send_message(self.HELP, chat)
@@ -345,15 +382,13 @@ class BotFunctions(HandleBot):
             print(command, msg, chat)
 
             if command == '/new':
-                self.new(msg, chat)
+                self.newTask(msg, chat)
             elif command == '/rename':
-                self.rename(msg, chat)
-            elif command == '/issue':
-                self.upload_github_issue(msg,chat)
+                self.renameTask(msg, chat)
             elif command == '/duplicate':
                 self.duplicate(msg, chat)
             elif command == '/delete':
-                self.delete(msg, chat)
+                self.deleteTask(msg, chat)
             elif command == '/todo':
                 self.todo(msg, chat)
             elif command == '/doing':
@@ -361,7 +396,7 @@ class BotFunctions(HandleBot):
             elif command == '/done':
                 self.done(msg, chat)
             elif command == '/list':
-                self.lista(msg, chat)
+                self.listTask(msg, chat)
             elif command == '/showpriority':
                 self.showpriority(msg, chat)
             elif command == '/dependson':
@@ -372,5 +407,7 @@ class BotFunctions(HandleBot):
                 self.start(chat)
             elif command == '/help':
                 self.helpr(chat)
+            elif command == '/duedate':
+                self.duedate(msg, chat)
             else:
                 self.send_message("So sorry m8. That's beyond me.", chat)
