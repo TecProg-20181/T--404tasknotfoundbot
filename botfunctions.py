@@ -7,6 +7,7 @@ import sqlalchemy
 
 import db
 from db import Task
+from db import Log
 from handlebot import HandleBot
 from datetime import datetime
 
@@ -385,6 +386,13 @@ class BotFunctions(HandleBot):
 #        for obs in query.all():
 #        obs_list += '[[{}]]\n'.format(log.id, log.log
 
+    def send_log(self, chat):
+        query = db.session.query(Log).order_by(Log.id)
+        log_list = '\U0001F4CB Log List:\n'
+        for log in query.all():
+            log_list += '{}: {}\n'.format(log.id, log.log)
+        self.send_message(log_list, chat)
+
     def start(self, chat):
         self.send_message("Come closer, I've got some merch that might be helpful.", chat)
         self.send_message(self.HELP, chat)
@@ -444,5 +452,7 @@ class BotFunctions(HandleBot):
                 self.helpr(chat)
             elif command == '/duedate':
                 self.duedate(msg, chat)
+            elif command == '/log':
+                self.send_log(chat)
             else:
                 self.send_message("So sorry m8. That's beyond me.", chat)
