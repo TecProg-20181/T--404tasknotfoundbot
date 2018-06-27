@@ -369,11 +369,11 @@ class BotFunctions(HandleBot):
                         return
 
                     if text == '':
-                        self.send_message("You want to give a duedate to task {}, but you didn't provide any date".format(task_id), chat)
+                        self.send_message("You need to give any data to task {}".format(task_id), chat)
                         return
                     else:
                         if not self.date_format(text):
-                            self.send_message("The duedate needs to be on US Format: mm/dd/YYYY", chat)
+                            self.send_message("The duedate needs put on US Format: mm/dd/YYYY", chat)
                         else:
                             task.duedate = datetime.strptime(text, '%m/%d/%Y')
                             self.send_message("Task {} deadline is on: {}".format(task_id, text), chat)
@@ -383,8 +383,6 @@ class BotFunctions(HandleBot):
         obs = Log(log=text)
         db.session.add(obs)
         db.session.commit()
-#        for obs in query.all():
-#        obs_list += '[[{}]]\n'.format(log.id, log.log
 
     def send_log(self, chat):
         query = db.session.query(Log).order_by(Log.id)
