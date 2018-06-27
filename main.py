@@ -24,7 +24,6 @@ def main():
             taskbot.handle_updates(updates)
 
         time.sleep(0.5)
-
-
+        
 if __name__ == '__main__':
     main()
