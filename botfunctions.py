@@ -11,17 +11,22 @@ from db import Log
 from handlebot import HandleBot
 from datetime import datetime
 
+
 class BotFunctions(HandleBot):
 
     def __init__(self):
         HandleBot.__init__(self)
 
-    def newTask(self, msg, chat):
+    def checkMsg(self, msg):
         text = ''
         if msg != '':
-                if len(msg.split(', ')) > 1:
-                    text = msg.split(', ')[-1]  # get the priority
-                msg = msg.split(', ', 1)[0]  # get the name task
+            if len(msg.split(', ')) > 1:
+                text = msg.split(', ')[-1]  # get the priority
+            msg = msg.split(', ', 1)[0]  # get the name task
+        return msg, text
+
+    def newTask(self, msg, chat):
+        text, msg = self.checkMsg(msg)
 
         if text == '':
             task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority='')
@@ -327,16 +332,16 @@ class BotFunctions(HandleBot):
 
     def get_github_user_data(self):
         loginText = 'login.txt'
-        fileOpen = open(loginText,'r')
+        fileOpen = open(loginText, 'r')
         login = fileOpen.read().split('\n')
         return login
 
-    def upload_github_issue(self,issueName,issueContent):
+    def upload_github_issue(self, issueName, issueContent):
         credentials = self.get_github_user_data()
         '''Create an issue on github.com using the given parameters.'''
         repoUrl = 'https://api.github.com/repos/TecProg-20181/T--404tasknotfoundbot/issues'
         session = requests.session()
-        session.auth = (credentials[0],credentials[1])
+        session.auth = (credentials[0], credentials[1])
         issue = {'title': issueName,
                  'body': issueContent,
                  }
