@@ -29,7 +29,8 @@ class BotFunctions(HandleBot):
         text, msg = self.checkMsg(msg)
 
         if text == '':
-            task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority='')
+            task = Task(chat=chat, name=msg, status='TODO', dependencies='',
+                        parents='', priority='')
             db.session.add(task)
             db.session.commit()
             self.send_message("New task *TODO* [[{}]] {}".format(task.id, task.name), chat)
